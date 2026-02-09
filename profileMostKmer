@@ -1,0 +1,48 @@
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
+
+
+public class Main {
+
+    public static String ProfileMostProbableKmer(String text, int k, double[][] profile) {
+        String bestKmer = "";
+        double bestProbability = -1.0; //start with negative so any positive probability will be better
+        
+        // check every k-mer in the text
+        for (int i = 0; i <= text.length() - k; i++) {
+            String kmer = text.substring(i, i + k);
+            double probability = 1.0;
+            
+            // calculate probability for this k-mer
+            for (int j = 0; j < k; j++) {
+                char nucleotide = kmer.charAt(j);
+                int rowIndex = -1;
+                
+                // determine which row of the profile matrix to use
+                switch (nucleotide) {
+                    case 'A': rowIndex = 0; break;
+                    case 'C': rowIndex = 1; break;
+                    case 'G': rowIndex = 2; break;
+                    case 'T': rowIndex = 3; break;
+                }
+                
+                // multiply by the probability from the profile
+                probability *= profile[rowIndex][j];
+                
+                // if probability becomes 0, we can break early
+                if (probability == 0) {
+                    break;
+                }
+            }
+            
+            // check if this is the best probability so far
+            if (probability > bestProbability) {
+                bestProbability = probability;
+                bestKmer = kmer;
+            }
+        }
+        
+        return bestKmer;
+    }

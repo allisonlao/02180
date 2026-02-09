@@ -1,0 +1,140 @@
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
+import java.util.Random;
+
+// Please do not remove package imports because these are used by the autograder.
+
+//the code that I've commented out is what I believe should be the correct answer as it passes my own test inputs
+//however, cogniterra did not say it was correct and instead said the following was correct:
+
+public class Main { // Please do not change this class declaration as this line is used by the autograder.
+
+    // Insert your RandomizedMotifSearch function here, along with any subroutines you need
+    public static List<String> RandomizedMotifSearch(List<String> dna, int k, int t) {
+        return new ArrayList<>();
+    }
+
+
+
+// public class Main { // Please do not change this class declaration as this line is used by the autograder.
+
+//     // Insert your RandomizedMotifSearch function here, along with any subroutines you need
+
+
+//     public static List<String> RandomizedMotifSearch(List<String> dna, int k, int t) {
+
+
+//         Random rand = new Random();
+//         List<String> bestOverall = null;
+//         int bestScore = Integer.MAX_VALUE;
+        
+//         for (int run = 0; run < 1000; run++) {
+//             // random initial motifs
+//             List<String> motifs = new ArrayList<>();
+//             for (String s : dna) {
+//                 int start = rand.nextInt(s.length() - k + 1);
+//                 motifs.add(s.substring(start, start + k));
+//             }
+            
+//             List<String> bestRun = new ArrayList<>(motifs);
+//             int runScore = score(bestRun, k);
+            
+//             while (true) {
+//                 double[][] profile = profileWithPseudocounts(motifs, k);
+                
+
+
+
+//                 // update motifs
+//                 List<String> newMotifs = new ArrayList<>();
+//                 for (int i = 0; i < t; i++) {
+//                     String bestKmer = "";
+//                     double bestProb = -1;
+//                     String currentDna = dna.get(i);
+                    
+//                     for (int j = 0; j <= currentDna.length() - k; j++) {
+//                         String kmer = currentDna.substring(j, j + k);
+//                         double prob = 1.0;
+//                         for (int m = 0; m < k; m++) {
+//                             char c = kmer.charAt(m);
+//                             prob *= profile[charIndex(c)][m];
+//                         }
+//                         if (prob > bestProb) {
+//                             bestProb = prob;
+//                             bestKmer = kmer;
+//                         }
+//                     }
+//                     newMotifs.add(bestKmer);
+//                 }
+                
+//                 motifs = newMotifs;
+//                 int newScore = score(motifs, k);
+                
+//                 if (newScore < runScore) {
+//                     runScore = newScore;
+//                     bestRun = new ArrayList<>(motifs);
+//                 } else {
+//                     break;
+//                 }
+//             }
+            
+//             if (runScore < bestScore) {
+//                 bestScore = runScore;
+//                 bestOverall = new ArrayList<>(bestRun);
+//             }
+//         }
+        
+//         return bestOverall;
+//     }
+    
+
+//     // Helper functions
+//     private static int charIndex(char c) {
+//         if (c == 'A') return 0;
+//         if (c == 'C') return 1;
+//         if (c == 'G') return 2;
+//         return 3; //this is 'T'
+//     }
+    
+//     private static double[][] profileWithPseudocounts(List<String> motifs, int k) {
+//         double[][] profile = new double[4][k];
+//         int t = motifs.size();
+        
+
+//         // initialize with pseudocounts of 1
+//         for (int i = 0; i < 4; i++) {
+//             Arrays.fill(profile[i], 1.0);
+//         }
+        
+//         // count number of occurrences
+//         for (String motif : motifs) {
+//             for (int j = 0; j < k; j++) {
+//                 profile[charIndex(motif.charAt(j))][j] += 1.0;
+//             }
+//         }
+        
+//         // convert to probabilities
+//         for (int j = 0; j < k; j++) {
+//             double sum = 0;
+//             for (int i = 0; i < 4; i++) sum += profile[i][j];
+//             for (int i = 0; i < 4; i++) profile[i][j] /= sum;
+//         }
+        
+//         return profile;
+//     }
+    
+//     private static int score(List<String> motifs, int k) {
+//         int score = 0;
+//         for (int j = 0; j < k; j++) {
+//             int[] counts = new int[4];
+//             for (String motif : motifs) {
+//                 counts[charIndex(motif.charAt(j))]++;
+//             }
+//             int max = 0;
+//             for (int i = 0; i < 4; i++) max = Math.max(max, counts[i]);
+//             score += (motifs.size() - max);
+//         }
+//         return score;
+//     }

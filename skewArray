@@ -1,0 +1,30 @@
+public static List<Integer> MinimumSkew(String Genome) {
+    List<Integer> result = new ArrayList<>();
+    
+    int currentSkew = 0;
+    int minSkew = 0;
+    
+    result.add(0);
+    
+    for (int i = 0; i < Genome.length(); i++) {
+        char nucleotide = Genome.charAt(i);
+        
+        if (nucleotide == 'G') {
+            currentSkew++;
+        } else if (nucleotide == 'C') {
+            currentSkew--;
+        }
+        
+        if (currentSkew < minSkew) {
+            // found new minimum, clear previous results
+            minSkew = currentSkew;
+            result.clear();
+            result.add(i + 1);
+        } else if (currentSkew == minSkew) {
+            // equal to current minimum
+            result.add(i + 1);
+        }
+    }
+    
+    return result;
+}

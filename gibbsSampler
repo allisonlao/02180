@@ -1,0 +1,189 @@
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
+import java.util.Random;
+
+public class Main {
+    
+    public static List<String> GibbsSampler(List<String> dna, int k, int t, int N) {
+        List<String> bestMotifs = new ArrayList<>();
+        int bestScore = Integer.MAX_VALUE;
+        Random rand = new Random();
+        
+        for (int start = 0; start < 1000; start++) {
+            List<String> motifs = new ArrayList<>();
+            
+            // Randomly select initial k-mers
+            for (String seq : dna) {
+                int pos = rand.nextInt(seq.length() - k + 1);
+                motifs.add(seq.substring(pos, pos + k));
+            }
+            
+            List<String> currentBest = new ArrayList<>(motifs);
+            int currentBestScore = score(motifs);
+            
+            for (int iter = 0; iter < N; iter++) {
+                int i = rand.nextInt(t);
+                
+                // Build profile from all motifs except i-th
+                double[][] profile = buildProfile(motifs, i, k);
+                
+                // Get i-th sequence
+                String sequence = dna.get(i);
+                
+                // calculate probabilities for each k-mer in sequence
+                double[] probs = new double[sequence.length() - k + 1];
+                for (int pos = 0; pos <= sequence.length() - k; pos++) {
+                    String kmer = sequence.substring(pos, pos + k);
+                    double prob = 1.0;
+                    for (int j = 0; j < k; j++) {
+                        char c = kmer.charAt(j);
+                        switch (c) {
+                            case 'A': prob *= profile[0][j]; break;
+                            case 'C': prob *= profile[1][j]; break;
+                            case 'G': prob *= profile[2][j]; break;
+                            case 'T': prob *= profile[3][j]; break;
+                        }
+                    }
+                    probs[pos] = prob;
+                }
+                
+                // normalize probabilities
+                double sum = 0;
+                for (double p : probs) sum += p;
+                if (sum > 0) {
+                    for (int idx = 0; idx < probs.length; idx++) {
+                        probs[idx] /= sum;
+                    }
+                } else {
+                    // uniform distribution if all probabilities are 0
+                    double uniform = 1.0 / probs.length;
+                    for (int idx = 0; idx < probs.length; idx++) {
+                        probs[idx] = uniform;
+                    }
+                }
+                
+                // Build cumulative distribution and select random k-mer
+                for (int idx = 1; idx < probs.length; idx++) {
+                    probs[idx] += probs[idx - 1];
+                }
+                
+                double r = rand.nextDouble();
+                int selectedPos = 0;
+                for (int idx = 0; idx < probs.length; idx++) {
+                    if (r <= probs[idx]) {
+                        selectedPos = idx;
+                        break;
+                    }
+                }
+                
+                // Update the i-th motif
+                motifs.set(i, sequence.substring(selectedPos, selectedPos + k));
+                
+                // Check if we found better motifs
+                int newScore = score(motifs);
+                if (newScore < currentBestScore) {
+                    currentBest = new ArrayList<>(motifs);
+                    currentBestScore = newScore;
+                }
+            }
+            
+            // update best
+            if (currentBestScore < bestScore) {
+                bestMotifs = currentBest;
+                bestScore = currentBestScore;
+            }
+        }
+        
+        return bestMotifs;
+    }
+    
+    private static double[][] buildProfile(List<String> motifs, int excludeIndex, int k) {
+        double[][] profile = new double[4][k];
+        int count = motifs.size() - 1;
+        
+        // Initialize with pseudocounts
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < k; j++) {
+                profile[i][j] = 1.0;
+            }
+        }
+        
+        //count occurrences
+        for (int m = 0; m < motifs.size(); m++) {
+            if (m == excludeIndex) continue;
+            
+            String motif = motifs.get(m);
+            for (int j = 0; j < k; j++) {
+                char c = motif.charAt(j);
+                switch (c) {
+                    case 'A': profile[0][j]++; break;
+                    case 'C': profile[1][j]++; break;
+                    case 'G': profile[2][j]++; break;
+                    case 'T': profile[3][j]++; break;
+                }
+            }
+        }
+        
+        // Convert to probabilities
+        for (int j = 0; j < k; j++) {
+            double total = profile[0][j] + profile[1][j] + profile[2][j] + profile[3][j];
+            for (int i = 0; i < 4; i++) {
+                profile[i][j] /= total;
+            }
+        }
+        
+        return profile;
+    }
+    
+    private static int score(List<String> motifs) {
+        if (motifs.isEmpty()) return Integer.MAX_VALUE;
+        
+        int k = motifs.get(0).length();
+        int t = motifs.size();
+        int score = 0;
+        
+        for (int pos = 0; pos < k; pos++) {
+            int[] counts = new int[4];
+            
+            for (String motif : motifs) {
+                char c = motif.charAt(pos);
+                switch (c) {
+                    case 'A': counts[0]++; break;
+                    case 'C': counts[1]++; break;
+                    case 'G': counts[2]++; break;
+                    case 'T': counts[3]++; break;
+                }
+            }
+            
+            int maxCount = 0;
+            for (int count : counts) {
+                if (count > maxCount) maxCount = count;
+            }
+            
+            score += (t - maxCount);
+        }
+        
+        return score;
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        
+        int k = scanner.nextInt();
+        int t = scanner.nextInt();
+        int N = scanner.nextInt();
+        
+        List<String> dna = new ArrayList<>();
+        for (int i = 0; i < t; i++) {
+            dna.add(scanner.next());
+        }
+        
+        List<String> result = GibbsSampler(dna, k, t, N);
+        for (String motif : result) {
+            System.out.println(motif);
+        }
+        
+        scanner.close();
+    }
