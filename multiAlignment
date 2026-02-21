@@ -1,0 +1,186 @@
+import java.util.*;
+
+public class Main {
+    
+    public static Tuple MultipleAlignment(String s1, String s2, String s3) {
+        int len1 = s1.length();
+        int len2 = s2.length();
+        int len3 = s3.length();
+        
+        int[][][] dp = new int[len1 + 1][len2 + 1][len3 + 1];
+        
+        int[][][] backtrack = new int[len1 + 1][len2 + 1][len3 + 1];
+    
+        for (int i = 0; i <= len1; i++) {
+            for (int j = 0; j <= len2; j++) {
+                for (int k = 0; k <= len3; k++) {
+                    if (i == 0 && j == 0 && k == 0) {
+                        dp[i][j][k] = 0;
+                        continue;
+                    }
+                    
+                    int maxScore = -1;
+                    int bestChoice = -1;
+                    
+                    if (i > 0 && j > 0 && k > 0) {
+                        int score = dp[i-1][j-1][k-1];
+                        if (s1.charAt(i-1) == s2.charAt(j-1) && s2.charAt(j-1) == s3.charAt(k-1)) {
+                            score += 1; //all match
+                        }
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 0;
+                        }
+                    }
+                    
+                    if (i > 0 && j > 0) {
+                        int score = dp[i-1][j-1][k];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 1;
+                        }
+                    }
+                    
+                    if (i > 0 && k > 0) {
+                        int score = dp[i-1][j][k-1];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 2;
+                        }
+                    }
+                    
+                    if (j > 0 && k > 0) {
+                        int score = dp[i][j-1][k-1];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 3;
+                        }
+                    }
+                    
+                    if (i > 0) {
+                        int score = dp[i-1][j][k];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 4;
+                        }
+                    }
+                    if (j > 0) {
+                        int score = dp[i][j-1][k];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 5;
+                        }
+                    }
+                    
+                    if (k > 0) {
+                        int score = dp[i][j][k-1];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestChoice = 6;
+                        }
+                    }
+                    
+                    dp[i][j][k] = maxScore;
+                    backtrack[i][j][k] = bestChoice;
+                }
+            }
+        }
+        
+        int maxScore = dp[len1][len2][len3];
+        
+        StringBuilder a1 = new StringBuilder();
+        StringBuilder a2 = new StringBuilder();
+        StringBuilder a3 = new StringBuilder();
+        
+        int i = len1, j = len2, k = len3;
+        
+        while (i > 0 || j > 0 || k > 0) {
+            int choice = backtrack[i][j][k];
+            
+            switch (choice) {
+                case 0:
+                    a1.append(s1.charAt(i-1));
+                    a2.append(s2.charAt(j-1));
+                    a3.append(s3.charAt(k-1));
+                    i--; j--; k--;
+                    break;
+                case 1:
+                    a1.append(s1.charAt(i-1));
+                    a2.append(s2.charAt(j-1));
+                    a3.append('-');
+                    i--; j--;
+                    break;
+                case 2:
+                    a1.append(s1.charAt(i-1));
+                    a2.append('-');
+                    a3.append(s3.charAt(k-1));
+                    i--; k--;
+                    break;
+                case 3: 
+                    a1.append('-');
+                    a2.append(s2.charAt(j-1));
+                    a3.append(s3.charAt(k-1));
+                    j--; k--;
+                    break;
+                case 4:
+                    a1.append(s1.charAt(i-1));
+                    a2.append('-');
+                    a3.append('-');
+                    i--;
+                    break;
+                case 5:
+                    a1.append('-');
+                    a2.append(s2.charAt(j-1));
+                    a3.append('-');
+                    j--;
+                    break;
+                case 6: 
+                    a1.append('-');
+                    a2.append('-');
+                    a3.append(s3.charAt(k-1));
+                    k--;
+                    break;
+            }
+        }
+        
+        return new Tuple(maxScore,
+                        a1.reverse().toString(),
+                        a2.reverse().toString(),
+                        a3.reverse().toString());
+    }
+
+    public static class Tuple {
+        int alignmentScore;
+        String alignedS1;
+        String alignedS2;
+        String alignedS3;
+
+        public Tuple(int alignmentScore, String alignedS1, String alignedS2, String alignedS3) {
+            this.alignmentScore = alignmentScore;
+            this.alignedS1 = alignedS1;
+            this.alignedS2 = alignedS2;
+            this.alignedS3 = alignedS3;
+        }
+    }
+    
+    // Main method for testing
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        
+        // Read three strings
+        String s1 = scanner.nextLine().trim();
+        String s2 = scanner.nextLine().trim();
+        String s3 = scanner.nextLine().trim();
+        
+        // Compute alignment
+        Tuple result = MultipleAlignment(s1, s2, s3);
+        
+        // Output results
+        System.out.println(result.alignmentScore);
+        System.out.println(result.alignedS1);
+        System.out.println(result.alignedS2);
+        System.out.println(result.alignedS3);
+        
+        scanner.close();
+    }
+}

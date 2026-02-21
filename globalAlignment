@@ -1,0 +1,79 @@
+import java.util.*;
+import java.io.*;
+
+public class Main {
+    
+    public static Tuple GlobalAlignment(int matchReward, int mismatchPenalty, int indelPenalty, String s, String t) {
+        int m = s.length();
+        int n = t.length();
+        
+        // create DP table for scores
+        int[][] dp = new int[m + 1][n + 1];
+        
+        // initialize first row and column (gap penalties)
+        for (int i = 0; i <= m; i++) {
+            dp[i][0] = i * -indelPenalty;
+        }
+        for (int j = 0; j <= n; j++) {
+            dp[0][j] = j * -indelPenalty;
+        }
+        
+        // fill the DP table
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                // calculate match/mismatch score
+                int matchScore;
+                if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                    matchScore = dp[i - 1][j - 1] + matchReward;
+                } else {
+                    matchScore = dp[i - 1][j - 1] - mismatchPenalty;
+                }
+                
+                // calculate indel scores
+                int indelFromS = dp[i - 1][j] - indelPenalty;  // Gap in t
+                int indelFromT = dp[i][j - 1] - indelPenalty;  // Gap in s
+                
+                // take maximum
+                dp[i][j] = Math.max(matchScore, Math.max(indelFromS, indelFromT));
+            }
+        }
+        
+        // reconstruct the alignment
+        StringBuilder alignedS = new StringBuilder();
+        StringBuilder alignedT = new StringBuilder();
+        
+        int i = m, j = n;
+        
+        while (i > 0 || j > 0) {
+            if (i > 0 && j > 0) {
+                // check if this was a match/mismatch
+                int currentScore = dp[i][j];
+                int matchMismatchScore = dp[i - 1][j - 1] + 
+                    (s.charAt(i - 1) == t.charAt(j - 1) ? matchReward : -mismatchPenalty);
+                
+                if (currentScore == matchMismatchScore) {
+                    // Came from diagonal (match or mismatch)
+                    alignedS.append(s.charAt(i - 1));
+                    alignedT.append(t.charAt(j - 1));
+                    i--;
+                    j--;
+                    continue;
+                }
+            }
+            
+            if (i > 0 && dp[i][j] == dp[i - 1][j] - indelPenalty) {
+                // came from above (gap in t)
+                alignedS.append(s.charAt(i - 1));
+                alignedT.append('-');
+                i--;
+            } else if (j > 0) {
+                // came from left (gap in s)
+                alignedS.append('-');
+                alignedT.append(t.charAt(j - 1));
+                j--;
+            }
+        }
+        
+        // reverse the strings since we built them backwards
+        return new Tuple(dp[m][n], alignedS.reverse().toString(), alignedT.reverse().toString());
+    }

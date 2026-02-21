@@ -1,0 +1,44 @@
+import java.util.Scanner;
+
+public class Main {
+    
+    public static String LongestCommonSubsequence(String s, String t) {
+        int m = s.length();
+        int n = t.length();
+        
+        // create DP table
+        int[][] dp = new int[m + 1][n + 1];
+        
+        // fill the table
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        
+        StringBuilder lcs = new StringBuilder();
+        int i = m, j = n;
+        
+        while (i > 0 && j > 0) {
+            if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                // current characters match
+                lcs.append(s.charAt(i - 1));
+                i--;
+                j--;
+            } else if (dp[i - 1][j] > dp[i][j - 1]) {
+                // move up (from the cell above)
+                i--;
+            } else {
+                // move left (from the cell to the left)
+                j--;
+            }
+        }
+        
+        // reverse the string since we built it backwards
+        return lcs.reverse().toString();
+    }
+    
