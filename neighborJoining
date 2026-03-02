@@ -1,0 +1,142 @@
+import java.util.*;
+
+class solution {
+    
+    static class Cluster {
+        int id;
+        List<Integer> nodes;
+        
+        Cluster(int id) {
+            this.id = id;
+            this.nodes = new ArrayList<>();
+            this.nodes.add(id);
+        }
+    }
+    
+    public static List<List<Double>> NeighborJoining(HashMap<Integer, HashMap<Integer, Double>> D) {
+        int n = D.size();
+        int nextNodeId = n;
+        
+        List<Integer> activeNodes = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            activeNodes.add(i);
+        }
+        
+        List<String> edges = new ArrayList<>();
+        
+        if (n == 2) {
+            edges.add(activeNodes.get(0) + "->" + activeNodes.get(1) + ":" + D.get(0).get(1));
+        }
+        else if (n == 3) {
+            int newNode = nextNodeId++;
+            
+            for (int i = 0; i < 3; i++) {
+                int node1 = activeNodes.get(i);
+                int node2 = activeNodes.get((i + 1) % 3);
+                int node3 = activeNodes.get((i + 2) % 3);
+                
+                double dist = (D.get(node1).get(node2) + D.get(node1).get(node3) - D.get(node2).get(node3)) / 2.0;
+                edges.add(newNode + "->" + node1 + ":" + dist);
+            }
+        }
+        else {
+            while (activeNodes.size() > 3) {
+                int m = activeNodes.size();
+                
+                HashMap<Integer, Double> totalDist = new HashMap<>();
+                for (int i : activeNodes) {
+                    double sum = 0.0;
+                    for (int j : activeNodes) {
+                        if (i != j) {
+                            sum += D.get(i).get(j);
+                        }
+                    }
+                    totalDist.put(i, sum);
+                }
+                
+                double minQ = Double.MAX_VALUE;
+                int minI = -1, minJ = -1;
+                
+                for (int i = 0; i < activeNodes.size(); i++) {
+                    for (int j = i + 1; j < activeNodes.size(); j++) {
+                        int nodeI = activeNodes.get(i);
+                        int nodeJ = activeNodes.get(j);
+                        
+                        double q = (m - 2) * D.get(nodeI).get(nodeJ) 
+                                  - totalDist.get(nodeI) - totalDist.get(nodeJ);
+                        
+                        if (q < minQ - 1e-10) {
+                            minQ = q;
+                            minI = nodeI;
+                            minJ = nodeJ;
+                        }
+                    }
+                }
+                
+                double delta = (totalDist.get(minI) - totalDist.get(minJ)) / (m - 2);
+                double limbI = (D.get(minI).get(minJ) + delta) / 2.0;
+                double limbJ = (D.get(minI).get(minJ) - delta) / 2.0;
+                
+                int newNode = nextNodeId++;
+                
+                edges.add(newNode + "->" + minI + ":" + limbI);
+                edges.add(newNode + "->" + minJ + ":" + limbJ);
+                
+                D.put(newNode, new HashMap<>());
+                
+                for (int k : activeNodes) {
+                    if (k != minI && k != minJ) {
+                        double dist = (D.get(minI).get(k) + D.get(minJ).get(k) - D.get(minI).get(minJ)) / 2.0;
+                        D.get(newNode).put(k, dist);
+                        D.get(k).put(newNode, dist);
+                    }
+                }
+            
+                activeNodes.remove((Integer) minJ);
+                activeNodes.remove((Integer) minI);
+                activeNodes.add(newNode);
+            }
+            
+            if (activeNodes.size() == 3) {
+                int node1 = activeNodes.get(0);
+                int node2 = activeNodes.get(1);
+                int node3 = activeNodes.get(2);
+                
+                int newNode = nextNodeId++;
+                
+                double dist1 = (D.get(node1).get(node2) + D.get(node1).get(node3) - D.get(node2).get(node3)) / 2.0;
+                double dist2 = (D.get(node1).get(node2) + D.get(node2).get(node3) - D.get(node1).get(node3)) / 2.0;
+                double dist3 = (D.get(node1).get(node3) + D.get(node2).get(node3) - D.get(node1).get(node2)) / 2.0;
+                
+                edges.add(newNode + "->" + node1 + ":" + dist1);
+                edges.add(newNode + "->" + node2 + ":" + dist2);
+                edges.add(newNode + "->" + node3 + ":" + dist3);
+            }
+        }
+        
+        Collections.sort(edges, (a, b) -> {
+            String[] partsA = a.split("->|:");
+            String[] partsB = b.split("->|:");
+            int sourceA = Integer.parseInt(partsA[0]);
+            int sourceB = Integer.parseInt(partsB[0]);
+            if (sourceA != sourceB) {
+                return Integer.compare(sourceA, sourceB);
+            }
+            int targetA = Integer.parseInt(partsA[1]);
+            int targetB = Integer.parseInt(partsB[1]);
+            return Integer.compare(targetA, targetB);
+        });
+        
+        List<List<Double>> result = new ArrayList<>();
+        for (String edge : edges) {
+            String[] parts = edge.split("->|:");
+            List<Double> edgeList = new ArrayList<>();
+            edgeList.add(Double.parseDouble(parts[0])); 
+            edgeList.add(Double.parseDouble(parts[1]));
+            edgeList.add(Double.parseDouble(parts[2]));
+            result.add(edgeList);
+        }
+        
+        return result;
+    }
+}

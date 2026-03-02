@@ -1,0 +1,113 @@
+import java.util.*;
+
+class solution {
+    
+    static class Cluster {
+        int id;
+        int size;
+        double age;
+        List<Integer> nodes;
+        
+        Cluster(int id, int size, double age) {
+            this.id = id;
+            this.size = size;
+            this.age = age;
+            this.nodes = new ArrayList<>();
+            this.nodes.add(id); 
+        }
+    }
+    
+    public static List<List<Double>> UPGMA(HashMap<Integer, HashMap<Integer, Double>> D) {
+        int n = D.size();
+        int nextNodeId = n;
+        
+        List<Cluster> clusters = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            Cluster cluster = new Cluster(i, 1, 0.0);
+            clusters.add(cluster);
+        }
+        
+        List<String> edges = new ArrayList<>();
+        
+        while (clusters.size() > 1) {
+            double minDist = Double.MAX_VALUE;
+            int minI = -1, minJ = -1;
+            
+            for (int i = 0; i < clusters.size(); i++) {
+                for (int j = i + 1; j < clusters.size(); j++) {
+                    Cluster ci = clusters.get(i);
+                    Cluster cj = clusters.get(j);
+                    
+                    double dist = D.get(ci.id).get(cj.id);
+                    if (dist < minDist - 1e-10) {
+                        minDist = dist;
+                        minI = i;
+                        minJ = j;
+                    }
+                }
+            }
+            
+            Cluster clusterI = clusters.get(minI);
+            Cluster clusterJ = clusters.get(minJ);
+            
+            Cluster newCluster = new Cluster(nextNodeId++, 
+                                           clusterI.size + clusterJ.size, 
+                                           minDist / 2.0);
+            
+            newCluster.nodes.clear();
+            newCluster.nodes.addAll(clusterI.nodes);
+            newCluster.nodes.addAll(clusterJ.nodes);
+            
+            double edgeWeightI = newCluster.age - clusterI.age;
+            double edgeWeightJ = newCluster.age - clusterJ.age;
+            
+            edges.add(newCluster.id + "->" + clusterI.id + ":" + edgeWeightI);
+            edges.add(newCluster.id + "->" + clusterJ.id + ":" + edgeWeightJ);
+            
+            clusters.remove(minJ);
+            clusters.remove(minI);
+            
+            D.put(newCluster.id, new HashMap<>());
+            
+            for (Cluster cluster : clusters) {
+                double dist = 0.0;
+                for (int node1 : newCluster.nodes) {
+                    for (int node2 : cluster.nodes) {
+                        dist += D.get(node1).get(node2);
+                    }
+                }
+                dist /= (newCluster.size * cluster.size);
+                
+                D.get(newCluster.id).put(cluster.id, dist);
+                D.get(cluster.id).put(newCluster.id, dist);
+            }
+            
+            clusters.add(newCluster);
+        }
+        
+        Collections.sort(edges, (a, b) -> {
+            String[] partsA = a.split("->|:");
+            String[] partsB = b.split("->|:");
+            int sourceA = Integer.parseInt(partsA[0]);
+            int sourceB = Integer.parseInt(partsB[0]);
+            if (sourceA != sourceB) {
+                return Integer.compare(sourceA, sourceB);
+            }
+            int targetA = Integer.parseInt(partsA[1]);
+            int targetB = Integer.parseInt(partsB[1]);
+            return Integer.compare(targetA, targetB);
+        });
+        
+        List<List<Double>> result = new ArrayList<>();
+        for (String edge : edges) {
+            String[] parts = edge.split("->|:");
+            List<Double> edgeList = new ArrayList<>();
+            edgeList.add(Double.parseDouble(parts[0]));
+            edgeList.add(Double.parseDouble(parts[1])); 
+            edgeList.add(Double.parseDouble(parts[2])); 
+            result.add(edgeList);
+        }
+        
+        return result;
+    }
+}
