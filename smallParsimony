@@ -1,0 +1,235 @@
+import java.util.*;
+
+class ScoreLabels {
+    int score;
+    HashMap<Integer, String> labels;
+    ScoreLabels(int score, HashMap<Integer, String> labels) {
+        this.score = score;
+        this.labels = labels;
+    }
+}
+
+class solution {
+    
+    static class Node {
+        int id;
+        Node left;
+        Node right;
+        Node parent;
+        boolean isLeaf;
+        
+        Node(int id) {
+            this.id = id;
+            this.left = null;
+            this.right = null;
+            this.parent = null;
+            this.isLeaf = false;
+        }
+    }
+    
+    public static ScoreLabels SmallParsimony(List<List<Integer>> edge_list, List<String> leaves) {
+        int n = leaves.size();
+        int numNodes = 2 * n - 1;
+        
+        HashMap<Integer, Node> nodes = new HashMap<>();
+        
+        for (int i = 0; i < numNodes; i++) {
+            nodes.put(i, new Node(i));
+        }
+        
+        for (int i = 0; i < n; i++) {
+            nodes.get(i).isLeaf = true;
+        }
+        
+        for (List<Integer> edge : edge_list) {
+            int parent = edge.get(0);
+            int child = edge.get(1);
+            
+            if (nodes.get(parent).left == null) {
+                nodes.get(parent).left = nodes.get(child);
+            } else {
+                nodes.get(parent).right = nodes.get(child);
+            }
+            nodes.get(child).parent = nodes.get(parent);
+        }
+        
+        Node root = null;
+        for (int i = 0; i < numNodes; i++) {
+            if (nodes.get(i).parent == null) {
+                root = nodes.get(i);
+                break;
+            }
+        }
+        
+        int stringLength = leaves.get(0).length();
+        
+        List<HashMap<Integer, Character>> nodeLabels = new ArrayList<>();
+        for (int pos = 0; pos < stringLength; pos++) {
+            HashMap<Integer, Character> leafChars = new HashMap<>();
+            for (int i = 0; i < n; i++) {
+                leafChars.put(i, leaves.get(i).charAt(pos));
+            }
+            
+            nodeLabels.add(smallParsimonyPosition(root, leafChars, n));
+        }
+        
+        HashMap<Integer, String> finalLabels = new HashMap<>();
+        for (int i = 0; i < numNodes; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int pos = 0; pos < stringLength; pos++) {
+                sb.append(nodeLabels.get(pos).get(i));
+            }
+            finalLabels.put(i, sb.toString());
+        }
+        
+        int totalScore = 0;
+        for (int pos = 0; pos < stringLength; pos++) {
+            totalScore += calculateScore(root, nodeLabels.get(pos));
+        }
+        
+        return new ScoreLabels(totalScore, finalLabels);
+    }
+    
+    private static HashMap<Integer, Character> smallParsimonyPosition(Node root, 
+                                                                      HashMap<Integer, Character> leafChars, 
+                                                                      int n) {
+        int numNodes = 2 * n - 1;
+        
+        HashMap<Integer, int[]> s = new HashMap<>();
+        
+        for (int i = 0; i < numNodes; i++) {
+            s.put(i, new int[4]);
+            Arrays.fill(s.get(i), Integer.MAX_VALUE);
+        }
+        
+        HashMap<Character, Integer> charToIndex = new HashMap<>();
+        charToIndex.put('A', 0);
+        charToIndex.put('C', 1);
+        charToIndex.put('G', 2);
+        charToIndex.put('T', 3);
+        
+        char[] indexToChar = {'A', 'C', 'G', 'T'};
+        
+        computeScores(root, s, leafChars, charToIndex);
+        
+        int[] rootScores = s.get(root.id);
+        int minScore = Integer.MAX_VALUE;
+        char rootChar = 'A';
+        for (int i = 0; i < 4; i++) {
+            if (rootScores[i] < minScore) {
+                minScore = rootScores[i];
+                rootChar = indexToChar[i];
+            }
+        }
+        
+        HashMap<Integer, Character> nodeChars = new HashMap<>();
+        nodeChars.put(root.id, rootChar);
+        backtrack(root, nodeChars, s, indexToChar, leafChars, charToIndex);
+        
+        return nodeChars;
+    }
+    
+    private static void computeScores(Node node, HashMap<Integer, int[]> s,
+                                      HashMap<Integer, Character> leafChars,
+                                      HashMap<Character, Integer> charToIndex) {
+        if (node.isLeaf) {
+            char c = leafChars.get(node.id);
+            int idx = charToIndex.get(c);
+            int[] scores = s.get(node.id);
+            for (int i = 0; i < 4; i++) {
+                scores[i] = (i == idx) ? 0 : Integer.MAX_VALUE;
+            }
+            return;
+        }
+        
+        computeScores(node.left, s, leafChars, charToIndex);
+        computeScores(node.right, s, leafChars, charToIndex);
+        
+        int[] leftScores = s.get(node.left.id);
+        int[] rightScores = s.get(node.right.id);
+        int[] thisScores = s.get(node.id);
+        
+        for (int i = 0; i < 4; i++) {
+            int leftMin = Integer.MAX_VALUE;
+            for (int j = 0; j < 4; j++) {
+                int cost = (i == j) ? 0 : 1;
+                if (leftScores[j] < Integer.MAX_VALUE) {
+                    leftMin = Math.min(leftMin, leftScores[j] + cost);
+                }
+            }
+            int rightMin = Integer.MAX_VALUE;
+            for (int k = 0; k < 4; k++) {
+                int cost = (i == k) ? 0 : 1;
+                if (rightScores[k] < Integer.MAX_VALUE) {
+                    rightMin = Math.min(rightMin, rightScores[k] + cost);
+                }
+            }
+            
+            if (leftMin < Integer.MAX_VALUE && rightMin < Integer.MAX_VALUE) {
+                thisScores[i] = leftMin + rightMin;
+            }
+        }
+    }
+    
+    private static void backtrack(Node node, HashMap<Integer, Character> nodeChars,
+                                 HashMap<Integer, int[]> s, char[] indexToChar,
+                                 HashMap<Integer, Character> leafChars,
+                                 HashMap<Character, Integer> charToIndex) {
+        if (node.isLeaf) {
+            return;
+        }
+        
+        char nodeChar = nodeChars.get(node.id);
+        int nodeIdx = charToIndex.get(nodeChar);
+        
+        int[] leftScores = s.get(node.left.id);
+        int leftMin = Integer.MAX_VALUE;
+        char leftChar = 'A';
+        for (int i = 0; i < 4; i++) {
+            if (leftScores[i] < Integer.MAX_VALUE) {
+                int cost = (nodeIdx == i) ? 0 : 1;
+                if (leftScores[i] + cost < leftMin) {
+                    leftMin = leftScores[i] + cost;
+                    leftChar = indexToChar[i];
+                }
+            }
+        }
+        nodeChars.put(node.left.id, leftChar);
+        
+        int[] rightScores = s.get(node.right.id);
+        int rightMin = Integer.MAX_VALUE;
+        char rightChar = 'A';
+        for (int i = 0; i < 4; i++) {
+            if (rightScores[i] < Integer.MAX_VALUE) {
+                int cost = (nodeIdx == i) ? 0 : 1;
+                if (rightScores[i] + cost < rightMin) {
+                    rightMin = rightScores[i] + cost;
+                    rightChar = indexToChar[i];
+                }
+            }
+        }
+        nodeChars.put(node.right.id, rightChar);
+        
+        backtrack(node.left, nodeChars, s, indexToChar, leafChars, charToIndex);
+        backtrack(node.right, nodeChars, s, indexToChar, leafChars, charToIndex);
+    }
+    
+    private static int calculateScore(Node root, HashMap<Integer, Character> nodeChars) {
+        if (root == null) return 0;
+        
+        int score = 0;
+        if (root.left != null) {
+            if (nodeChars.get(root.id) != nodeChars.get(root.left.id)) {
+                score++;
+            }
+            score += calculateScore(root.left, nodeChars);
+        }
+        if (root.right != null) {
+            if (nodeChars.get(root.id) != nodeChars.get(root.right.id)) {
+                score++;
+            }
+            score += calculateScore(root.right, nodeChars);
+        }
+        return score;
+    }
+}

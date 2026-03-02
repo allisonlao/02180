@@ -1,0 +1,112 @@
+import java.util.*;
+
+public class Main {
+    
+    public static Tuple LocalAlignment(int matchReward, int mismatchPenalty, int indelPenalty, String s, String t) {
+        int m = s.length();
+        int n = t.length();
+        
+        // Initialize DP matrix with zeros
+        int[][] dp = new int[m + 1][n + 1];
+        for (int i = 0; i <= m; i++) {
+            dp[i][0] = 0;
+        }
+        for (int j = 0; j <= n; j++) {
+            dp[0][j] = 0;
+        }
+        
+        // Track maximum score and its position
+        int maxScore = 0;
+        int maxI = 0;
+        int maxJ = 0;
+        
+        // Fill the matrix
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                // Calculate match/mismatch score
+                int diagonal;
+                if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                    diagonal = dp[i - 1][j - 1] + matchReward;
+                } else {
+                    diagonal = dp[i - 1][j - 1] - mismatchPenalty;
+                }
+                
+                // Calculate other possibilities
+                int up = dp[i - 1][j] - indelPenalty;
+                int left = dp[i][j - 1] - indelPenalty;
+                
+                // Take maximum with 0 (local alignment property)
+                int max = Math.max(0, Math.max(diagonal, Math.max(up, left)));
+                dp[i][j] = max;
+                
+                // Update maximum score position
+                if (max > maxScore) {
+                    maxScore = max;
+                    maxI = i;
+                    maxJ = j;
+                }
+            }
+        }
+        
+        // If no positive score found, return empty alignment
+        if (maxScore == 0) {
+            return new Tuple(0, "", "");
+        }
+        
+        // Backtrack to find alignment
+        StringBuilder alignedS = new StringBuilder();
+        StringBuilder alignedT = new StringBuilder();
+        int i = maxI;
+        int j = maxJ;
+        
+        while (i > 0 && j > 0 && dp[i][j] > 0) {
+            // Check diagonal move (match/mismatch)
+            int diagonalScore;
+            if (s.charAt(i - 1) == t.charAt(j - 1)) {
+                diagonalScore = dp[i - 1][j - 1] + matchReward;
+            } else {
+                diagonalScore = dp[i - 1][j - 1] - mismatchPenalty;
+            }
+            
+            if (dp[i][j] == diagonalScore) {
+                alignedS.append(s.charAt(i - 1));
+                alignedT.append(t.charAt(j - 1));
+                i--;
+                j--;
+            }
+            // Check up move (gap in t)
+            else if (dp[i][j] == dp[i - 1][j] - indelPenalty) {
+                alignedS.append(s.charAt(i - 1));
+                alignedT.append('-');
+                i--;
+            }
+            // Check left move (gap in s)
+            else if (dp[i][j] == dp[i][j - 1] - indelPenalty) {
+                alignedS.append('-');
+                alignedT.append(t.charAt(j - 1));
+                j--;
+            }
+            else {
+                // Should not reach here if scores are computed correctly
+                break;
+            }
+        }
+        
+        // Reverse the strings since we built them backwards
+        return new Tuple(maxScore, 
+                        alignedS.reverse().toString(), 
+                        alignedT.reverse().toString());
+    }
+
+    public static class Tuple {
+        public int alignmentScore;
+        public String alignedS;
+        public String alignedT;
+
+        public Tuple(int alignmentScore, String alignedS, String alignedT) {
+            this.alignmentScore = alignmentScore;
+            this.alignedS = alignedS;
+            this.alignedT = alignedT;
+        }
+    }
+    

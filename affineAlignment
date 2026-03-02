@@ -1,0 +1,134 @@
+import java.util.*;
+import java.io.*;
+
+// Please do not remove package imports because these are used by the autograder.
+
+public class Main {
+
+    static final int NEG_INF = Integer.MIN_VALUE / 4;
+
+   public static Tuple AffineAlignment(int matchReward, int mismatchPenalty,
+                                    int gapOpeningPenalty, int gapExtensionPenalty,
+                                    String s, String t) {
+
+    int n = s.length();
+    int m = t.length();
+
+    int NEG_INF = Integer.MIN_VALUE / 4;
+
+    int[][] M  = new int[n+1][m+1];
+    int[][] Ix = new int[n+1][m+1];
+    int[][] Iy = new int[n+1][m+1];
+
+    int[][] backM  = new int[n+1][m+1];
+    int[][] backIx = new int[n+1][m+1];
+    int[][] backIy = new int[n+1][m+1];
+
+    for (int i = 0; i <= n; i++) {
+        Arrays.fill(M[i], NEG_INF);
+        Arrays.fill(Ix[i], NEG_INF);
+        Arrays.fill(Iy[i], NEG_INF);
+    }
+
+    M[0][0] = 0;
+
+    // First column (gaps in t)
+    for (int i = 1; i <= n; i++) {
+        Ix[i][0] = -gapOpeningPenalty - (i-1)*gapExtensionPenalty;
+        backIx[i][0] = 1;
+    }
+
+    // First row (gaps in s)
+    for (int j = 1; j <= m; j++) {
+        Iy[0][j] = -gapOpeningPenalty - (j-1)*gapExtensionPenalty;
+        backIy[0][j] = 2;
+    }
+
+    // fill DP
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= m; j++) {
+
+            int score = (s.charAt(i-1) == t.charAt(j-1))
+                    ? matchReward
+                    : -mismatchPenalty;
+
+            // M
+            int bestPrev = Math.max(M[i-1][j-1],
+                           Math.max(Ix[i-1][j-1], Iy[i-1][j-1]));
+
+            M[i][j] = bestPrev + score;
+
+            if (bestPrev == M[i-1][j-1]) backM[i][j] = 0;
+            else if (bestPrev == Ix[i-1][j-1]) backM[i][j] = 1;
+            else backM[i][j] = 2;
+
+            // gap in t
+            int openX = M[i-1][j] - gapOpeningPenalty;
+            int extendX = Ix[i-1][j] - gapExtensionPenalty;
+
+            if (openX >= extendX) {
+                Ix[i][j] = openX;
+                backIx[i][j] = 0;
+            } else {
+                Ix[i][j] = extendX;
+                backIx[i][j] = 1;
+            }
+
+            // gap in s
+            int openY = M[i][j-1] - gapOpeningPenalty;
+            int extendY = Iy[i][j-1] - gapExtensionPenalty;
+
+            if (openY >= extendY) {
+                Iy[i][j] = openY;
+                backIy[i][j] = 0;
+            } else {
+                Iy[i][j] = extendY;
+                backIy[i][j] = 2;
+            }
+        }
+    }
+
+    int finalScore = Math.max(M[n][m],
+                      Math.max(Ix[n][m], Iy[n][m]));
+
+    int matrix;
+    if (finalScore == M[n][m]) matrix = 0;
+    else if (finalScore == Ix[n][m]) matrix = 1;
+    else matrix = 2;
+
+    StringBuilder alignS = new StringBuilder();
+    StringBuilder alignT = new StringBuilder();
+
+    int i = n, j = m;
+
+    while (i > 0 || j > 0) {
+
+        if (matrix == 0) {
+            int prev = backM[i][j];
+            alignS.append(s.charAt(i-1));
+            alignT.append(t.charAt(j-1));
+            i--; j--;
+            matrix = prev;
+        }
+        else if (matrix == 1) {
+            int prev = backIx[i][j];
+            alignS.append(s.charAt(i-1));
+            alignT.append('-');
+            i--;
+            matrix = prev;
+        }
+        else {
+            int prev = backIy[i][j];
+            alignS.append('-');
+            alignT.append(t.charAt(j-1));
+            j--;
+            matrix = prev;
+        }
+    }
+
+    return new Tuple(
+            finalScore,
+            alignS.reverse().toString(),
+            alignT.reverse().toString()
+    );
+}
